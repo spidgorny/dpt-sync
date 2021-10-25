@@ -8,5 +8,9 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "node-gtk": "^0.10.0",
+    "typescript": "^4.4.4"
+  }
 }
