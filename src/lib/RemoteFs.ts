@@ -1,3 +1,5 @@
+import { Dirent } from "fs";
+
 let post: any;
 
 export interface BaseResponse {
@@ -35,29 +37,57 @@ const findFolder = () => {
 
 }
 
-export class DptFolder {
+enum Type {
+  DOCUMENT = 'document',
+  FOLDER = 'folder',
+}
+
+interface DptEntry {
+  readonly id: string;
+  readonly name: string,
+  readonly createdDate: Date,
+  readonly parentFolder: string;
+  readonly type: "document" | "folder"; // TODO enum
+}
+
+export class DptFolder implements DptEntry {
   constructor(
-    public readonly id: Number,
-    
+    public readonly id: string,
+    public readonly name: string,
+    public readonly createdDate: Date,
+    public readonly parentFolder: string,
+    public readonly type: "document" | "folder",
   ) {}
 
-  fromResponse(response: FolderResponse) {
-
+  static newFromResponse(response: FolderResponse) {
+    return new DptFolder(
+      response.entry_id,
+      response.entry_name,
+      new Date(response.created_date),
+      response.parent_folder_id,
+      response.entry_type,
+    )
   }
 }
 
-export class DptFile {
+export class DptFile implements DptEntry {
   constructor(
-    public readonly id: string, 
+    public readonly id: string,
+    public readonly name: string,
     public readonly createdDate: Date,
     public readonly modifiedDate: Date,
+    public readonly parentFolder: string,
+    public readonly type: "document" | "folder",
   ) {}
 
-  newFromResponse(response: FileResponse) {
+  static newFromResponse(response: FileResponse) {
     return new DptFile(
       response.entry_id,
+      response.entry_name,
       new Date(response.created_date),
       new Date(response.modified_date),
+      response.parent_folder_id,
+      response.entry_type,
     );
   }
 }
@@ -82,3 +112,31 @@ const uploadFile = (file: DptFile, toFolder: DptFolder) => {
     document_source: '', // what is this?
   });
 };
+
+export class RemoteFs {
+  constructor(private entries: (DptFile | DptFolder)[]) {}
+
+  static newFromJson(json: EntryTypeAll) {
+    const entries = [];
+    for (const entry of json.entry_list) {
+      switch (entry.entry_type) {
+        case "document":
+          entries.push(DptFile.newFromResponse(entry));
+          break;
+        case "folder":
+          entries.push(DptFolder.newFromResponse(entry));
+          break;
+      }
+    }
+    return new RemoteFs(entries);
+  }
+
+  findDocument(parentFolder: DptFolder, toFind: Dirent) {
+    return this.entries.find((entry) => {
+      const isInParentFolder = entry.id === parentFolder.id;
+      const isDocument = entry.type === "document";
+      const nameMatches = entry.name === toFind.name;
+      return isInParentFolder && isDocument && nameMatches;
+    });
+  }
+}

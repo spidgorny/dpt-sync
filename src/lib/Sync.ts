@@ -1,7 +1,7 @@
 import { Dir, Dirent, PathLike, promises as fs } from 'fs';
 import * as path from 'path';
 import { LocalDir } from './LocalFs';
-import { DptFolder, EntryTypeAll } from './RemoteFs';
+import { DptFolder, EntryTypeAll, RemoteFs } from './RemoteFs';
 
 /**
  * documenting my thoughts: it's smarter to walk through the localdir and find
@@ -26,7 +26,7 @@ const sync = async (localRootFolder: string, remoteRootFolder: string = 'root') 
         // found remote file, all is good
         // TODO compare if one of them is newer!
       } else {
-        // createRemoteFile();
+        // uploadFile();
       }
     } else if (localChild.isDirectory()) {
       const remoteDirectory = entryTypeAll.entry_list.find((e) => (
@@ -34,6 +34,31 @@ const sync = async (localRootFolder: string, remoteRootFolder: string = 'root') 
         && e.entry_name === localChild.name
         && e.entry_type === 'folder'
       ));
+      if (remoteDirectory) {
+        // found remote directory, all is good
+      } else {
+        // remoteDirectoryId = createRemoteDirectory();
+      }
+
+      sync(localChild, remoteDirectoryId);
+    }
+  }
+};
+
+const sync = async (source: FsDir, destination: FsDir) => {
+
+
+  for await (const localChild of await source.children()) {
+    if (localChild.isFile()) {
+      const remoteFile = remoteFs.findDocument(currentRemoteFolderId, localChild);
+      if (remoteFile) {
+        // found remote file, all is good
+        // TODO compare if one of them is newer!
+      } else {
+        // uploadFile();
+      }
+    } else if (localChild.isDirectory()) {
+      const remoteDirectory = remoteFs.findDocument(currentRemoteFolderId, localChild);
       if (remoteDirectory) {
         // found remote directory, all is good
       } else {

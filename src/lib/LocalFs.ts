@@ -1,5 +1,9 @@
-import { promises as fs } from "fs";
+import { Dirent, promises as fs } from "fs";
 import * as path from "path";
+
+interface LocalEntry extends Dirent {
+    parentDirectory: LocalDir | undefined;
+}
 
 export class LocalFile {
     constructor(private filename: string, private parentDir: LocalDir) {}
