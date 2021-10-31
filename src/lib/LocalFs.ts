@@ -1,44 +1,64 @@
 import { Dirent, promises as fs } from "fs";
 import * as path from "path";
+import { FsDir, FsEntry, FsFile } from './Fs';
+import { RemoteFsEntry } from "./RemoteFs";
 
-interface LocalEntry extends Dirent {
-    parentDirectory: LocalDir | undefined;
-}
+export abstract class LocalFsEntry implements FsEntry {
+    constructor(
+        public name: string,
+        public dirname: string,
+    ) {
 
-export class LocalFile {
-    constructor(private filename: string, private parentDir: LocalDir) {}
-    
-    read = () => fs.readFile(this.parentDir.path);
-    
-    get extension() {
-        return path.extname(this.parentDir.path);
     }
 
+    get path() {
+        return this.dirname + this.name;
+    }
+
+    abstract isFile(): boolean;
+    abstract isDir(): boolean;
+}
+
+export class LocalFsDir extends LocalFsEntry implements FsDir {
+
+
+    isFile = () => false;
+    isDir = () => true;
+
+    async *children(): AsyncGenerator<LocalFsEntry> {
+        for await (const child of await fs.opendir(this.path)) {
+            if (child.isDirectory()) {
+                yield new LocalFsDir(child.name, this.path);
+            }
+            else if (child.isFile()) {
+                yield new LocalFsFile(child.name, this.path);
+            } 
+        }
+    }
+
+    async findDirectChildByName(name: string) {
+        for await (const child of await this.children()) {
+            if (child.name === name) {
+                return child;
+            }
+        }
+    }
+
+    async newFile(name: string, data: Buffer) {
+        const file = new LocalFsFile(name, this.path);
+        fs.writeFile(file.path, data);
+        return file;
+    }
+}
+
+export class LocalFsFile extends LocalFsEntry implements FsFile {
+    createdDate = async () => (await fs.stat(this.path)).ctime;
+    modifiedDate = async () => (await fs.stat(this.path)).atime;
     get isPdf() {
-        return path.extname(this.filename) === 'pdf';
-    }
-}
-
-export class LocalDir {
-    constructor(public path: string) {}
-
-    newChild(childPath: string) {
-        return new LocalDir(path.join(this.path, childPath));
+        return path.extname(this.path) === '.pdf';
     }
 
-    async *walk(): AsyncGenerator<LocalFile> {
-        for await (const child of await fs.opendir(this.path)) {
-            const fullPath = path.join(this.path, child.name);
-            if (child.isDirectory()) yield* new LocalDir(fullPath).walk();
-            else if (child.isFile()) yield new LocalFile(fullPath, this);
-        }
-    }
-
-    children = () => fs.opendir(this.path);
-
-    async *childrenObj() {
-        for await (const child of await fs.opendir(this.path)) {
-            if (child.isDirectory()) yield new LocalDir()
-        }
-    }
+    read = () => fs.readFile(this.path);
+    isFile = () => true;
+    isDir = () => false;
 }
