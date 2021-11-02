@@ -1,21 +1,31 @@
-const gi = require('node-gtk')
-const Gtk = gi.require('Gtk', '3.0')
-
+import { quit } from './index';
+import { gi, Gtk } from './lib/Gtk';
 import {PageDiscovery} from './pages/PageDiscovery';
 
-gi.startLoop()
-Gtk.init()
+export class Assistant extends Gtk.Assistant {
+    constructor() {
+        super({
+            title: "My DPT Sync",
+            // default_height: 800,    // TODO: file bug report about underscore
+            // default_width: 500,
+        });
 
-const assistant = new Gtk.Assistant()
-assistant.on('cancel', () => Gtk.mainQuit())
-assistant.on('delete-event', () => false)
+        this.setDefaultSize(800, 500);
+        this.on('cancel', () => this.close());
+        this.on('delete-event', () => false); // what does this do?
+        // this.on('close', () => quit());
+        this.setupPages();
+        this.showAll();
+    }
 
-const pageDiscovery = new PageDiscovery();
-assistant.appendPage(pageDiscovery);
-assistant.setDefaultSize(800, 500)
-// assistant.add(new Gtk.Label({ label: 'Hello Gtk+' }))
+    setupPages() {
+        this.pageDiscovery = new PageDiscovery();
+        this.pageDiscovery.deviceList.on('row-activated', (
+            () => this.setPageComplete(this.pageDiscovery, true)
+        ));
+        this.appendPage(this.pageDiscovery);
+        this.setPageTitle(this.pageDiscovery, 'hi');
+    }
+}
 
-assistant.showAll()
-Gtk.main()
-
-export {};
+gi.registerClass(Assistant);
