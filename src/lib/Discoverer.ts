@@ -1,10 +1,10 @@
 import * as bonjour from "bonjour";
 
 export class DiscoveredDevice {
-    constructor(private ip: string) {}
+    constructor(public ip: string) {}
 }
 
-export class Discovery {
+export class Discoverer {
     private browser?: bonjour.Browser;
 
     constructor() {
@@ -12,8 +12,10 @@ export class Discovery {
     }
 
     startSearch(callback: (arg0: DiscoveredDevice) => any) {
-        this.browser = bonjour().find({ type: 'digitalpaper' }, (service) => {
-            callback(new DiscoveredDevice(service.addresses[0]));
+        console.log(`Looking for devices...`);
+        this.browser = bonjour().find({}, (service) => {
+            console.log(`I found device ${service}`);
+            callback(new DiscoveredDevice(service.fqdn));
         });
     }
 
