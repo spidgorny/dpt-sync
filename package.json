@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.24.0",
     "bonjour": "^3.5.0",
     "node-gtk": "^0.10.0",
     "typescript": "^4.4.4"

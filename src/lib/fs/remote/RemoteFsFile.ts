@@ -7,10 +7,12 @@ import { RemoteFsBase } from "./RemoteFsBase";
 export class RemoteFsFile extends RemoteFsBase implements FsFile {
   isFile: true = true;
   isDir: false = false;
-  
-  constructor(
-  ) {
-    super('asd', 'asd', 'asd');
+
+  // @todo make getter
+  isPdf: boolean = false;
+
+  constructor(id = 'asd', name = 'asd', dirname = 'asd') {
+    super(id, name, dirname);
   }
 
   createdDate(): Promise<Date> {
@@ -21,10 +23,8 @@ export class RemoteFsFile extends RemoteFsBase implements FsFile {
     throw new Error("Method not implemented.");
   }
 
-  isPdf: boolean;
-
   async delete() {
-    axios.delete(`/documents/${this.id}`);
+    return axios.delete(`/documents/${this.id}`);
   }
 
   read(): Promise<Buffer> {

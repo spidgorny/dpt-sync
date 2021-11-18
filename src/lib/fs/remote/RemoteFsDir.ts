@@ -1,8 +1,9 @@
 import axios from "axios";
-import { RemoteFsEntry, RemoteFsFile } from ".";
-import { FsDir } from "../Fs";
-import { RemoteFsBase } from "./RemoteFsBase";
-import { EntryTypeAll, FileResponse, Response } from "./responses";
+import {RemoteFsEntry, RemoteFsFile} from ".";
+import {FsDir} from "../Fs";
+import {RemoteFsBase} from "./RemoteFsBase";
+import {EntryTypeAll, Response} from "./responses";
+import {toArray} from "../../helper/generator";
 
 export class RemoteFsDir extends RemoteFsBase implements FsDir {
     isFile: false = false;
@@ -73,21 +74,26 @@ export class RemoteFsDir extends RemoteFsBase implements FsDir {
                 return child;
             }
         }
+        return;
+
+        // alternative? will await all items instead of up until searched
+        return (await toArray(this.children())).find(x => x.name === name);
     }
 
     async delete() {
-        axios.delete(`/folders/${this.id}`);
+        return axios.delete(`/folders/${this.id}`);
     }
 
     async newSubfolder(name: string) {
-        axios.post('/folders2', {
+        await axios.post('/folders2', {
             folder_name: name,
             parent_folder_id: this.id,
         });
 
         // or, if support for nesting is desired
         const [first, ...other] = name.split('/');
-        if (!(await this.findDirectChildByName('first'))?.isDir()) {
+        let firstChild = await this.findDirectChildByName('first');
+        if (!firstChild?.isDir) {
             const post = axios.post('...');
             // new.newSubfolder(other.join('/'));
         }
@@ -102,8 +108,10 @@ export class RemoteFsDir extends RemoteFsBase implements FsDir {
             document_source: "", // what is this?
         });
 
-        const file = await axios.put(`/documents/${response.data.document_id}/file`, data);
+        const res = await axios.put(`/documents/${response.data.document_id}/file`, data);
         // file.data
         // TODO what to do here? should I add the response to this.json array?
+
+        return new RemoteFsFile(res.data.name, res.data.name, this.id);
     }
 }

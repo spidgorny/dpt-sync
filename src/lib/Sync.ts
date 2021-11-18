@@ -16,11 +16,11 @@ export const sync = async (source: FsDir, destination: FsDir) => {
         // found remote directory, all is good
       } else {
         // remoteDirectoryId = createRemoteDirectory();
-        correspondingChild = null as FsDir; // null will be function to create dir
+        correspondingChild = null as unknown as FsDir; // null will be function to create dir
       }
       const x = correspondingChild;
 
-      sync(sourceChild, correspondingChild);
+      await sync(sourceChild, correspondingChild);
     }
   }
 };
